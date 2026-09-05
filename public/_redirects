@@ -1,2 +1,2 @@
-/join /index.html 200
-/* /index.html 200
+# Pages serves generated HTML at extensionless paths and uses 404.html for misses.
+# Do not add a catch-all SPA rewrite: unknown URLs must return HTTP 404.

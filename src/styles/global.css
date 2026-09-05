@@ -1,4 +1,10 @@
 :root { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; color: #f5f7fa; background: #03070b; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; color-scheme: dark; --muted: rgba(245,247,250,.55); --red: #ff3131; }
+@view-transition { navigation: auto; }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 160ms; }
+.app-unavailable .home .hero-copy { opacity: 1; transform: none; }
+.app-unavailable .home .static-scene { opacity: .95; }
+.app-unavailable .motion-controls, .app-unavailable .interaction-hint { display: none; }
 * { box-sizing: border-box; }
 body { margin: 0; }
 button, a { -webkit-tap-highlight-color: transparent; }

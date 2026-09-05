@@ -1,6 +1,6 @@
 # 反向加载 · 粒子品牌首页
 
-为 fxjzai.com 实现的交互式粒子品牌网站，支持静态托管。首页使用原始 Logo 蒙版采样的白色与红色星粒，独立 `/join` 社群页面不加载 Three.js。
+为 fxjzai.com 实现的交互式粒子品牌网站，支持静态托管。首页使用原始 Logo 蒙版采样的白色与红色星粒，独立 `/join` 社群页面不加载 Three.js。构建时生成完整 HTML，浏览器接管后启动交互。
 
 ## 本地运行与构建
 
@@ -14,6 +14,23 @@ npm run preview
 ```
 
 开发服务器与生产预览默认使用同一个 4173 端口，选择其一运行。构建产物为 `dist/`。依赖版本由 `package-lock.json` 固定。使用 Vite、React、TypeScript、Three.js 和 React Three Fiber。GPU 模式使用批量 Points 和自定义顶点着色器；兼容模式使用 Canvas 2D 实时计算三维投影。
+
+`npm run build` 先做 TypeScript 检查，再构建浏览器资源，并通过 React 在构建时生成 `index.html`、`join.html`、`404.html`、`sitemap.xml` 和 `robots.txt`。生产环境不需要 Node 服务。开发服务器运行客户端版本；静态正文、元信息和 HTTP 行为应使用生产预览验收。需要并存时运行 `npm run preview -- --port 4174 --strictPort`。
+
+## 页面与内容架构
+
+- `src/content/site.ts`：品牌信息、正式域名、首页文案与主入口。默认配置保留定型首页，活动期间可以改文案和链接，恢复配置即可还原。
+- `src/app/routes.ts`：页面地址、标题、描述、是否允许索引；`src/app/App.tsx`：对应页面的按需加载器。新增页面需要同时登记这两处。
+- `src/app/metadata.ts`：逐页 canonical、Open Graph、基础 WebPage JSON-LD 和 robots 元信息。所有内容必须与真实页面一致，不虚构组织、产品或事件。
+- `src/entry-server.tsx` 与 `scripts/build.mjs`：使用同一页面组件生成 HTML，避免维护两套正文。浏览器通过 hydration 接管，浏览器专用状态与粒子在挂载后初始化。
+- `src/app/navigation.ts`：悬停/键盘聚焦时预取已知站内页面的 HTML，省流量或慢速网络跳过；普通链接负责跳转、历史和焦点行为。支持的浏览器使用 160ms 原生页面过渡，减少动态偏好下禁用过渡。
+- `src/scene/`：现有粒子实现，与新增产品分开。`/join` 和 404 不加载首页模块、Three.js 或粒子数据。
+
+没有 JavaScript 时，首页显示原有静态 Logo、文案和可用链接；动态按钮隐藏。社群页初始内容来自构建时的配置，浏览器再请求最新 `community.json`，请求失败保留已有内容。
+
+### 后续轻量产品边界
+
+AI 时代编年史暂未实现，也没有在正式首页添加未完成入口。后续采用 `/ai-history` 单页面：仅分「LLM 时代」与「更早时期」，默认最新在前，向前回溯；使用紧凑事件列表和品牌/事件类型筛选，避免为每个品牌铺一条宽泳道。覆盖 GPT、Claude、Gemini、Grok、DeepSeek、Qwen、Kimi、GLM 等，也记录编程工具诞生、产品整合等重要变化。事件日期、来源及事实须调研核实后录入。内容数据与筛选组件分开即可，不引入事件详情子站、CMS 或数据库。
 
 ## 交互
 
@@ -72,7 +89,9 @@ npm run preview
 3. 构建环境选择上述受支持的 Node 版本。
 4. 在 Cloudflare Pages 项目里添加并验证 `fxjzai.com` 自定义域名。
 
-`public/_redirects` 包含 `/join` 的 SPA 回退。没有数据库、账户系统或后端运行依赖。
+也可以在 Cloudflare 控制台选择 Pages → 拖放文件，上传 `dist/` 的内容或以这些文件为根目录的 ZIP；不要上传源码或包含外层 `dist` 目录的 ZIP。直接上传项目后续继续采用直接上传方式更新。
+
+Pages 按无扩展名地址提供静态 HTML，`/join` 对应 `join.html`，`404.html` 保证未知路径返回 404。构建生成去除页面尾斜杠的 301 规则，不使用全站 SPA 回退。没有数据库、账户系统或后端运行依赖。`robots.txt` 与站点地图开放正式内容，404 标记 `noindex`；配置中的正式域名应与最终绑定域名一致。
 
 ## 重建 Logo 数据
 
@@ -88,7 +107,11 @@ python3 scripts/generate_logo_assets.py --output /tmp/fxjzai-logo-assets
 
 ## 验证范围
 
-当前版本为 `2026-09-06-particle-flow-1`。定向数值回归使用 Node.js 22.18+：`node --test tests/*.test.mjs`，覆盖移动输入、轨迹中段受力、当前位置受力、惯性差异、30/60/120Hz 阻尼一致性、Logo 路径范围与接缝连续性。本次在 Edge 验证连续搅动、手动视角、暂停、恢复与重播；WebGL 桌面 22,000 点和 Canvas 2D 6,200 点均约 60 FPS，Canvas 绘制采样约 5ms。390px 视口 WebGL 6,500 点约 60 FPS，无横向溢出。尚未覆盖真实手机或重新验收 Safari。
+粒子版本为 `2026-09-06-particle-flow-1`。回归测试使用 Node.js 22.18+：先 `npm run build`，再 `node --test tests/*.test.mjs`。数值测试覆盖移动输入、轨迹中段受力、当前位置受力、惯性差异、30/60/120Hz 阻尼一致性、Logo 路径范围与接缝连续性；站点测试覆盖未知路由、元信息转义、构建后的正文和 SEO 输出。
+
+粒子版本此前在 Edge 验证连续搅动、手动视角、暂停、恢复与重播；WebGL 桌面 22,000 点和 Canvas 2D 6,200 点均约 60 FPS，Canvas 绘制采样约 5ms。390px 视口 WebGL 6,500 点约 60 FPS，无横向溢出。尚未覆盖真实手机或重新验收 Safari。
+
+本次静态页面重构在 Edge 生产预览中验证：1462×693 视口下导航、品牌、首页文案、侧边说明、页脚和按钮的文字、坐标、尺寸、字体、颜色与重构前一致；WebGL 桌面 22,000 点与 Canvas 2D 6,200 点采样约 60 FPS，Canvas 拖动、暂停、刷新后保持偏好正常。390×844 视口 WebGL 6,500 点约 60 FPS，无横向溢出；禁用 JavaScript 后首页及社群页可读、可跳转；系统减少动态模式自动暂停；社群导航不请求首页、Three.js 或粒子资源，前进后退正常。HTTP 检查首页/社群/robots/sitemap 为 200、尾斜杠为 301、未知页面为 404。构建与 11 项回归通过。上述为桌面 Edge 和视口模拟，不代表真实手机验收。
 
 鼠标运动参考了 [OpenAI Astra 公开页面](https://openai.com/index/gpt-6-astra/) 中逐粒子动量与解析衰减的思路；当前实现是独立粒子运动，未引入压力流体求解器。
 

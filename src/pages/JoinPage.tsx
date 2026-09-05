@@ -1,24 +1,22 @@
 import { useEffect, useState } from 'react';
 import { ArrowIcon, Brand } from '../app/Brand';
+import initialCommunity from '../../public/community.json';
 
 type Community = { qrImage: string; qrUpdatedAt: string; contactLabel: string; contactValue: string; contactUrl: string };
 const empty: Community = { qrImage: '', qrUpdatedAt: '', contactLabel: '', contactValue: '', contactUrl: '' };
 const safeUrl = (url: string) => /^(https?:\/\/|mailto:|tel:|\/(?!\/))/.test(url) ? url : '';
 
 export function JoinPage() {
-  const [community, setCommunity] = useState<Community>(empty);
-  const [loading, setLoading] = useState(true);
+  const [community, setCommunity] = useState<Community>(initialCommunity);
   const [imageError, setImageError] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
   useEffect(() => {
-    document.title = '加入社群 · 反向加载';
     const controller = new AbortController();
     fetch('/community.json', { cache: 'no-store', signal: controller.signal })
       .then(response => { if (!response.ok) throw new Error('Config unavailable'); return response.json(); })
       .then(data => setCommunity(Object.fromEntries(Object.keys(empty).map(key => [key, typeof data[key] === 'string' ? data[key] : ''])) as Community))
-      .catch(() => {})
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+      .catch(() => {});
     return () => controller.abort();
   }, []);
   const qr = safeUrl(community.qrImage);
@@ -37,7 +35,7 @@ export function JoinPage() {
       <h1>一起，<br />换个方向看世界<span className="title-period">.</span></h1>
       <p className="join-intro">加入反向加载社群，继续探索新的可能。</p>
       <div className={`qr-panel ${hasQr ? 'has-qr' : ''}`}>
-        {loading ? <p className="qr-loading" role="status">正在获取社群入口…</p> : hasQr ? <>
+        {hasQr ? <>
           <img className="community-qr" src={qrUrl} alt="反向加载社群二维码" onError={() => setImageError(true)} />
           <p>微信扫码加入 · 手机端可长按保存</p>
           <a href={qrUrl} download="反向加载社群二维码.png" className="save-qr">保存二维码<ArrowIcon /></a>

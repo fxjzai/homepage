@@ -1,7 +1,9 @@
+import { site } from '../content/site';
+
 export function Brand() {
   return <a href="/" className="brand" aria-label="反向加载首页">
     <img src="/assets/brand-mark.svg" alt="" width="30" height="34" />
-    <span className="brand-name">反向加载<span className="brand-english">REVERSE LOADING</span></span>
+    <span className="brand-name">{site.name}<span className="brand-english">{site.englishName}</span></span>
   </a>;
 }
 
