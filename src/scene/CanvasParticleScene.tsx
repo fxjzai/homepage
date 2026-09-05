@@ -1,7 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { usePointerField } from '../hooks/usePointerField';
 import targets from './logoTargetsLite.json';
+import { createLogoFlow, flowPosition } from '../lib/logoFlow';
+import logoSvg from '../../public/assets/brand-mark.svg?raw';
 import type { SceneProps } from './sceneTypes';
+import { coastParticle, particleMass, PointerMotion, stirParticle } from '../lib/pointerMotion';
 
 const TAU = Math.PI * 2;
 const clamp = (x: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));
@@ -38,16 +41,29 @@ export default function CanvasParticleScene(props: SceneProps) {
     if (!context) { currentProps.current.onError(); return; }
     const ctx = context;
     const glows = [makeGlow(false), makeGlow(true)];
-    const stars = document.createElement('canvas');
-    const offsets = new Float32Array(targets.length * 3);
+    const offsets = new Float32Array(targets.length * 4);
+    const skyOffsets = new Float32Array(1300 * 4);
+    const motion = new PointerMotion();
+    const stars = Array.from({ length: 1300 }, (_, i) => {
+      const seed = hash(i + 551);
+      const dust = i % 3 === 0;
+      const radius = .4 + hash(i + 501) * 1.85;
+      const angle = (i % 2) * Math.PI + radius * 2.1 + (hash(i + 931) - .5) * .8;
+      const diameter = dust ? 1 + seed : 1.2 + seed ** 8 * 10;
+      return { x: dust ? Math.cos(angle) * radius : hash(i * 1.71 + 55) * 2.12 - 1.06,
+        y: dust ? Math.sin(angle) * radius * .72 : hash(i * 2.91 + 91) * 2.12 - 1.06,
+        dust, diameter, warm: hash(i + 901) > .82, alpha: .25 + hash(i + 613) * .4,
+        mass: particleMass(diameter, seed) };
+    });
     const points = targets.map(([x, y, red], i) => {
       const seed = hash(i + 17.31);
       const rank = hash(i + 81.2);
       return { x, y, z: (hash(i + 7.91) - .5) * .13, red, seed, phase: seed * TAU,
-        bright: rank > .935, hero: rank > .992, radius: .40 + hash(i + 11.7) * .55,
+        mass: particleMass(rank > .935 ? 8 : 1, seed), bright: rank > .935, hero: rank > .992, radius: .40 + hash(i + 11.7) * .55,
         delay: 1.05 + red * .48 + hash(i + 21.3) * .42,
         duration: 2.25 + seed * .28, scatterRadius: 2.1 + hash(i + 31.5) * 2.4 };
     });
+    const flow = createLogoFlow(new Float32Array(points.flatMap(p => [p.x, p.y, p.z])), new Float32Array(points.map(p => p.red)), new Float32Array(points.map(p => p.seed)), logoSvg);
     let width = 1, height = 1, ratio = 1, mobile = false, count = 6200;
     let rotationX = 0, rotationY = 0, animationTime = 0;
     let intro = Math.max(0, (performance.now() - currentProps.current.epoch) / 1000);
@@ -56,19 +72,12 @@ export default function CanvasParticleScene(props: SceneProps) {
     let sampleTime = 0, sampleFrames = 0, slowWindows = 0, disposed = false;
 
     const resize = () => {
+      motion.reset();
       const rect = node.getBoundingClientRect();
       width = rect.width; height = rect.height; mobile = width <= 600;
       ratio = Math.min(window.devicePixelRatio || 1, mobile ? 1.15 : 1.5);
       count = mobile ? 3200 : 6200;
       canvas.width = Math.max(1, Math.round(width * ratio)); canvas.height = Math.max(1, Math.round(height * ratio));
-      stars.width = canvas.width; stars.height = canvas.height;
-      const sky = stars.getContext('2d')!;
-      sky.setTransform(ratio, 0, 0, ratio, 0, 0);
-      for (let i = 0; i < (mobile ? 220 : 500); i++) {
-        const sx = hash(i * 1.71 + 55) * width, sy = hash(i * 2.91 + 91) * height;
-        sky.fillStyle = `rgba(177,207,229,${.10 + hash(i + 613) * .28})`;
-        sky.beginPath(); sky.arc(sx, sy, .4 + hash(i + 73) * .55, 0, TAU); sky.fill();
-      }
       schedule();
     };
 
@@ -80,9 +89,9 @@ export default function CanvasParticleScene(props: SceneProps) {
       if (!state.visible) { lastNow = 0; return; }
       const elapsed = lastNow ? (now - lastNow) / 1000 : 1 / 60;
       lastNow = now;
-      const dt = Math.min(elapsed, 1);
-      if (lastReplay !== state.replay) { intro = 0; lastReplay = state.replay; }
-      if (state.paused) { intro = Math.max(intro, 7); offsets.fill(0); rotationX = rotationY = 0; }
+      const dt = Math.min(elapsed, .05);
+      if (lastReplay !== state.replay) { intro = 0; offsets.fill(0); skyOffsets.fill(0); motion.reset(); lastReplay = state.replay; }
+      if (state.paused) { intro = Math.max(intro, 7); offsets.fill(0); skyOffsets.fill(0); motion.reset(); rotationX = rotationY = 0; }
       else { intro += elapsed; animationTime += dt; }
       const field = pointer.current;
       if (!state.paused) {
@@ -92,20 +101,44 @@ export default function CanvasParticleScene(props: SceneProps) {
           field.velocityX *= Math.exp(-dt * 5); field.velocityY *= Math.exp(-dt * 5);
         }
         const smoothing = 1 - Math.exp(-dt * 4.2);
-        rotationX += ((field.active ? -field.y * .10 : 0) + field.dragX + Math.sin(animationTime * .22) * .035 - rotationX) * smoothing;
-        rotationY += ((field.active ? field.x * .18 : 0) + field.dragY + Math.sin(animationTime * .17) * .065 - rotationY) * smoothing;
+        rotationX += (field.dragX - rotationX) * smoothing;
+        rotationY += (field.dragY - rotationY) * smoothing;
       }
       const sx = Math.sin(rotationX), cx = Math.cos(rotationX), sy = Math.sin(rotationY), cy = Math.cos(rotationY);
       const scale = Math.min(width, height) * (mobile ? .395 : .315);
       const centerX = width / 2, centerY = height * (mobile ? .422 : .465);
-      const mouseX = (field.x * width / 2) / scale / cy;
-      const mouseY = ((1 - field.y) * height / 2 - centerY) / -scale / cx;
-      const spring = 1 - Math.exp(-dt * (field.active ? 7.0 : 2.2));
+      if (elapsed > .2) motion.reset();
+      const movement = motion.sample(field.x, field.y, field.active && !field.dragging && !state.paused);
+      const stroke = { x: field.x * width / height, y: field.y, dx: movement.x * width / height, dy: movement.y };
+      const moving = stroke.dx * stroke.dx + stroke.dy * stroke.dy > 1e-8;
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       ctx.clearRect(0, 0, width, height);
       ctx.globalAlpha = clamp(intro * 1.6); ctx.globalCompositeOperation = 'source-over';
-      ctx.drawImage(stars, 0, 0, width, height);
       ctx.globalCompositeOperation = 'lighter';
+      const skyBatches = Array.from({ length: 8 }, () => new Path2D());
+      const skySparks: number[][] = [];
+      for (let i = 0; i < (mobile ? 500 : stars.length); i++) {
+        const star = stars[i], k = i * 4;
+        const x = star.x * (star.dust ? 1 : width / height), y = star.y;
+        coastParticle(skyOffsets, k, star.mass, dt);
+        if (moving) stirParticle(skyOffsets, k, star.mass, x, y, stroke);
+        const px = width / 2 + (x + skyOffsets[k]) * height / 2;
+        const py = height / 2 - (y + skyOffsets[k + 1]) * height / 2;
+        if (star.diameter > 4) skySparks.push([px, py, star.diameter, star.alpha]);
+        else {
+          const bin = (star.warm ? 4 : 0) + Math.min(3, Math.floor(star.alpha * 4));
+          const radius = star.diameter * .32;
+          skyBatches[bin].moveTo(px + radius, py); skyBatches[bin].arc(px, py, radius, 0, TAU);
+        }
+      }
+      for (let i = 0; i < skyBatches.length; i++) {
+        ctx.globalAlpha = ((i % 4) + .5) / 4 * clamp(intro * 1.6);
+        ctx.fillStyle = i < 4 ? '#c4e5ff' : '#ffc79d'; ctx.fill(skyBatches[i]);
+      }
+      for (const [x, y, diameter, alpha] of skySparks) {
+        ctx.globalAlpha = alpha * clamp(intro * 1.6);
+        ctx.drawImage(glows[0], x - diameter / 2, y - diameter / 2, diameter, diameter);
+      }
       const batches = Array.from({ length: 16 }, () => new Path2D());
       const sparks: number[][] = [];
       const quiet = state.paused ? 0 : 1;
@@ -115,41 +148,31 @@ export default function CanvasParticleScene(props: SceneProps) {
         const progress = 1 - (1 - linear) ** 3;
         if (progress < .002) continue;
         const angle = p.phase * 3 + (1 - progress) * (1.4 + p.seed);
-        let x = Math.cos(angle) * p.scatterRadius * (1 - progress) + (p.x + Math.sin(animationTime * .31 + p.phase * 12) * .006 * quiet) * progress;
-        let y = Math.sin(angle) * p.scatterRadius * (1 - progress) + (p.y + Math.cos(animationTime * .27 + p.phase * 8) * .006 * quiet) * progress;
-        let z = p.z + Math.sin(animationTime * .38 + p.phase * 4) * .02 * quiet;
-        let forceX = 0, forceY = 0, forceZ = 0;
-        if (field.active && !state.paused) {
-          const dx = x - mouseX, dy = y - mouseY, distance = Math.hypot(dx, dy);
-          if (distance < .46) {
-            const falloff = (1 - distance / .46) ** 2 * (p.red ? .82 : 1);
-            forceX = (dx * .12 - dy * .072) / Math.max(.005, distance) * falloff;
-            forceY = (dy * .12 + dx * .072) / Math.max(.005, distance) * falloff;
-            forceZ = .24 * falloff;
-          }
-        }
-        const k = i * 3;
-        offsets[k] += (forceX - offsets[k]) * spring;
-        offsets[k + 1] += (forceY - offsets[k + 1]) * spring;
-        offsets[k + 2] += (forceZ - offsets[k + 2]) * spring;
-        x += offsets[k] * progress; y += offsets[k + 1] * progress; z += offsets[k + 2] * progress;
+        const flowIndex = i * 4;
+        const stream = state.paused ? p : flowPosition(p.x, p.y, flow.paths[flowIndex], flow.paths[flowIndex + 1], flow.paths[flowIndex + 2], flow.paths[flowIndex + 3], p.seed, animationTime);
+        const x = Math.cos(angle) * p.scatterRadius * (1 - progress) + stream.x * progress;
+        const y = Math.sin(angle) * p.scatterRadius * (1 - progress) + stream.y * progress;
+        const z = p.z + Math.sin(animationTime * .38 + p.phase * 4) * .02 * quiet;
         const rx = x * cy + z * sy, rz = -x * sy + z * cy;
         const ry = y * cx - rz * sx, depth = y * sx + rz * cx;
         const perspective = 1 / (1 - depth * .21);
-        const px = centerX + rx * scale * perspective, py = centerY - ry * scale * perspective;
+        const baseX = centerX + rx * scale * perspective, baseY = centerY - ry * scale * perspective;
+        const k = i * 4;
+        coastParticle(offsets, k, p.mass, dt);
+        if (moving) stirParticle(offsets, k, p.mass, (baseX - width / 2) * 2 / height, 1 - baseY * 2 / height, stroke);
+        const px = baseX + offsets[k] * height / 2, py = baseY - offsets[k + 1] * height / 2;
         if (px < -30 || px > width + 30 || py < -30 || py > height + 30) continue;
         const twinkle = state.paused ? 1 : .77 + .23 * Math.sin(animationTime * (.32 + p.seed * .53) + p.phase * 11);
-        const slashPosition = (p.x + p.y + 1.45) / 2.9;
-        const sweep = p.red && !state.paused && intro > 3.65 && intro < 4.65 ? Math.exp(-Math.pow((slashPosition - (intro - 3.65) / .85) * 11, 2)) * .35 : 0;
-        const breathPhase = (animationTime % 2.8) / 2.8;
-        const breathBase = .5 - .5 * Math.cos(breathPhase * TAU);
-        const breath = p.red && !state.paused && intro > 4.2 ? breathBase * breathBase * (3 - 2 * breathBase) : 0;
-        const alpha = clamp((.5 + p.seed * .4 + p.red * .1) * twinkle * clamp(progress * 1.3) + sweep + breath * .34);
+        const slashPosition = (stream.x + stream.y + 1.45) / 2.9;
+        const sweepPosition = ((intro - 3.65) % 2.8) / 1.15 * 1.4 - .2;
+        const sweepDistance = (slashPosition - sweepPosition) * 11;
+        const sweep = p.red && !state.paused && intro >= 3.65 ? Math.exp(-(sweepDistance * sweepDistance)) : 0;
+        const alpha = clamp((.5 + p.seed * .4 + p.red * .1) * twinkle * clamp(progress * 1.3) + sweep * .65) * flow.softness[i];
         if (p.bright) {
-          const glowSize = (p.hero ? 25 : 10 + p.seed * 7) * (mobile ? .8 : 1) * perspective;
+          const glowSize = (p.hero ? 25 : 10 + p.seed * 7) * (mobile ? .8 : 1) * perspective * (1 + sweep * .7);
           sparks.push([px, py, glowSize, alpha, p.red]);
         } else {
-          const radius = p.radius * perspective * (mobile ? .85 : 1) * (1 + breath * .12);
+          const radius = p.radius * perspective * (mobile ? .85 : 1) * (1 + sweep * .5);
           const bin = p.red * 8 + Math.min(7, Math.floor(alpha * 8));
           batches[bin].moveTo(px + radius, py); batches[bin].arc(px, py, radius, 0, TAU);
         }
@@ -181,7 +204,7 @@ export default function CanvasParticleScene(props: SceneProps) {
     function schedule() { if (!frameRequest && !disposed) frameRequest = requestAnimationFrame(paint); }
     wake.current = () => {
       // Reset immediately: hidden tabs may never execute a pending RAF callback.
-      lastNow = 0; sampleTime = 0; sampleFrames = 0;
+      lastNow = 0; sampleTime = 0; sampleFrames = 0; motion.reset();
       if (!currentProps.current.visible) { cancelAnimationFrame(frameRequest); frameRequest = 0; }
       else schedule();
     };

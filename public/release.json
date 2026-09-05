@@ -1,4 +1,4 @@
 {
-  "release": "2026-09-05-gpu-fix-2",
-  "change": "Fix live ShaderMaterial uniform updates on Apple WebGL, remove undefined shader pow operations, and refine breathing-light and pointer motion."
+  "release": "2026-09-06-particle-flow-1",
+  "change": "Give each logo grain a contained ambient flow and independent pointer momentum; make the sparse background stars interactive, soften the logo rim, retain the red scan and manual camera drag."
 }

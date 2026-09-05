@@ -1,13 +1,26 @@
+# Dependencies, build output and test reports
 node_modules/
-dist/
+/dist/
+/coverage/
+*.tsbuildinfo
+
+# Local configuration; keep shareable examples trackable
 .env
 .env.*
+!.env.example
+!.env.*.example
 *.local
-*.tsbuildinfo
+
+# Logs and platform / Python caches
+*.log
+.DS_Store
+__pycache__/
+*.py[cod]
+
+# Generated browser and tool artifacts
 .openai/artifacts/
 .playwright-cli/
 
-# Local handoff and packaged delivery artifacts are kept outside source control.
-LOCAL_AGENT_HANDOFF.md
-fxjzai-*.patch
-fxjzai-*.zip
+# Root-level delivery archives and obsolete exported patches
+/*.zip
+/fxjzai-*.patch

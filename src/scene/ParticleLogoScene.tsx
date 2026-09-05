@@ -40,7 +40,9 @@ export default function ParticleLogoScene({ paused, visible, replay, epoch, onRe
       const probe = document.createElement('canvas');
       const context = probe.getContext('webgl2');
       if (!context) { if (import.meta.env.DEV) console.warn('WebGL 2 is not supported by this browser'); onError(); return; }
+      const motionSupported = context.getExtension('EXT_color_buffer_float') || context.getExtension('EXT_color_buffer_half_float');
       context.getExtension('WEBGL_lose_context')?.loseContext();
+      if (!motionSupported) { onError(); return; }
     } catch (error) { if (import.meta.env.DEV) console.warn('WebGL preflight failed:', error); onError(); return; }
     loadLogoTargets().then(data => { if (mounted) setData(data); }).catch(error => { if (import.meta.env.DEV) console.error('Logo targets unavailable:', error); if (mounted) onError(); });
     return () => { mounted = false; };
@@ -58,7 +60,7 @@ export default function ParticleLogoScene({ paused, visible, replay, epoch, onRe
       dpr={[.75, mobile ? 1.15 : 1.5]} frameloop={visible && !paused ? 'always' : 'demand'}
       gl={{ alpha: true, antialias: false, powerPreference: 'high-performance', toneMapping: NoToneMapping }}>
       <SceneLifecycle active={visible && !paused} onReady={onReady} onError={onError} />
-      <BackgroundStars paused={paused} mobile={mobile} />
+      <BackgroundStars paused={paused} mobile={mobile} pointer={pointer} replay={replay} />
       <ParticleLogo data={data} count={count} paused={paused} replay={replay} epoch={epoch} pointer={pointer} mobile={mobile} onMetrics={onMetrics} />
     </Canvas>}
   </div>;

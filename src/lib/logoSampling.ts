@@ -1,4 +1,6 @@
 import { BufferAttribute, BufferGeometry, Color } from 'three';
+import { createLogoFlow } from './logoFlow';
+import logoSvg from '../../public/assets/brand-mark.svg?raw';
 
 export function createLogoGeometry(data: Float32Array, count: number) {
   const positions = new Float32Array(count * 3);
@@ -11,11 +13,16 @@ export function createLogoGeometry(data: Float32Array, count: number) {
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(positions, 3));
   geometry.setAttribute('aParameters', new BufferAttribute(parameters, 4));
+  const kinds = new Float32Array(count), seeds = new Float32Array(count);
+  for (let i = 0; i < count; i++) { kinds[i] = parameters[i * 4]; seeds[i] = parameters[i * 4 + 1]; }
+  const flow = createLogoFlow(positions, kinds, seeds, logoSvg);
+  geometry.setAttribute('aFlow', new BufferAttribute(flow.paths, 4));
+  geometry.setAttribute('aSoftness', new BufferAttribute(flow.softness, 1));
   geometry.computeBoundingSphere();
   return geometry;
 }
 
-export function createStarGeometry(count: number) {
+export function createStarGeometry(count: number, aspect: number) {
   let seed = 41230;
   const random = () => { seed = (1664525 * seed + 1013904223) >>> 0; return seed / 4294967296; };
   const positions = new Float32Array(count * 3);
@@ -23,10 +30,18 @@ export function createStarGeometry(count: number) {
   const colors = new Float32Array(count * 3);
   const phases = new Float32Array(count);
   for (let i = 0; i < count; i++) {
-    positions.set([(random() - .5) * 20, (random() - .5) * 12, -1 - random() * 7], i * 3);
-    sizes[i] = .55 + Math.pow(random(), 7) * 2.4;
+    const dust = i % 3 === 0;
+    const depth = 5.8 + random() * 7;
+    const halfHeight = depth * Math.tan(19 * Math.PI / 180);
+    const radius = .4 + random() * 1.85;
+    const angle = (i % 2) * Math.PI + radius * 2.1 + (random() - .5) * .8;
+    // Generate against the viewport: distant stars should not mostly lie offscreen.
+    const x = dust ? Math.cos(angle) * radius : (random() * 2 - 1) * aspect * 1.06;
+    const y = dust ? Math.sin(angle) * radius * .72 : (random() * 2 - 1) * 1.06;
+    positions.set([x * halfHeight, y * halfHeight, 4.8 - depth], i * 3);
+    sizes[i] = dust ? 1.0 + random() * 1.4 : 1.2 + Math.pow(random(), 8) * 11;
     phases[i] = random() * 12;
-    const color = new Color(random() > .91 ? '#8da5bd' : '#dde7ef').multiplyScalar(.2 + random() * .5);
+    const color = new Color(random() > .82 ? '#ffc79d' : '#c4e5ff').multiplyScalar(dust ? .35 + random() * .3 : .55 + random() * .4);
     colors.set(color.toArray(), i * 3);
   }
   const geometry = new BufferGeometry();

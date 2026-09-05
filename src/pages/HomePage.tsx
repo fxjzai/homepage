@@ -63,7 +63,7 @@ export default function HomePage() {
         <ParticleLogoScene paused={paused} visible={visible} replay={replay} epoch={epoch} onReady={onWebGLReady} onError={onError} onReplay={replayAnimation} onMetrics={debug ? setMetrics : undefined} />
       </Suspense>
     </SceneBoundary></div>}
-    {debug && <output className="scene-diagnostics" aria-label="粒子渲染诊断">版本 2026-09-05-gpu-fix-2<br />路径 {backend} · {paused ? '已暂停' : '动态开启'}{systemReduced ? ' · 系统减少动态' : ''}{metrics && <><br />{metrics.renderer} · {metrics.particles} 粒子 · {metrics.fps} FPS<br />帧 {metrics.frame} · 旋转 {metrics.rotation.toFixed(3)} · 动画 {metrics.intro.toFixed(2)}s{metrics.paintMs !== undefined && <><br />绘制 {metrics.paintMs.toFixed(1)}ms</>}</>}</output>}
+    {debug && <output className="scene-diagnostics" aria-label="粒子渲染诊断">版本 2026-09-06-particle-flow-1<br />路径 {backend} · {paused ? '已暂停' : '动态开启'}{systemReduced ? ' · 系统减少动态' : ''}{metrics && <><br />{metrics.renderer} · {metrics.particles} 粒子 · {metrics.fps} FPS<br />帧 {metrics.frame} · 旋转 {metrics.rotation.toFixed(3)} · 动画 {metrics.intro.toFixed(2)}s{metrics.paintMs !== undefined && <><br />绘制 {metrics.paintMs.toFixed(1)}ms</>}</>}</output>}
 
     <header className="site-header">
       <Brand />
@@ -71,9 +71,8 @@ export default function HomePage() {
     </header>
 
     <section className={`hero-copy ${copyVisible ? 'copy-visible' : ''}`} aria-label="品牌介绍">
-      <div className="copy-overline"><span className="red-line" />换个方向，发现可能</div>
+      <div className="copy-overline"><span className="red-line" />探索无终点</div>
       <h1>反向加载<span className="title-period">.</span></h1>
-      <p>换一个方向，重新理解世界。</p>
     </section>
 
     <div className="orbit-caption" aria-hidden="true"><span>视角，从来不止一个</span><span className="caption-line" /></div>

@@ -9,7 +9,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid #eee; outline-offset:
 button { border: 0; background: none; }
 ::selection { background: #9e2629; color: white; }
 .home, .boot-surface { min-height: 620px; height: 100svh; position: relative; overflow: hidden; background: #03070b; }
-.space-underlay { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 51% 43%, #091219 0%, #04090e 32%, #03070b 60%, #020405 100%); }
+.space-underlay { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 67% 27%, #12202d80 0%, transparent 38%), radial-gradient(ellipse at 28% 68%, #18232b70 0%, transparent 36%), radial-gradient(ellipse at 51% 43%, #091219 0%, #04090e 38%, #020405 100%); }
 .scene-container { position: absolute; inset: 0; touch-action: pan-y; cursor: grab; opacity: 0; transition: opacity 1s ease; }
 .scene-ready .scene-container { opacity: 1; }
 .scene-container.is-dragging { cursor: grabbing; }
