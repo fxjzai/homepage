@@ -1,0 +1,7 @@
+/community.json
+  Cache-Control: no-store, max-age=0
+/assets/community/*
+  Cache-Control: no-cache, max-age=0
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

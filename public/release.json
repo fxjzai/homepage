@@ -1,0 +1,4 @@
+{
+  "release": "2026-09-05-gpu-fix-2",
+  "change": "Fix live ShaderMaterial uniform updates on Apple WebGL, remove undefined shader pow operations, and refine breathing-light and pointer motion."
+}

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.*
+*.local
+*.tsbuildinfo
+.openai/artifacts/
+.playwright-cli/
+
+# Local handoff and packaged delivery artifacts are kept outside source control.
+LOCAL_AGENT_HANDOFF.md
+fxjzai-*.patch
+fxjzai-*.zip
