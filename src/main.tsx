@@ -8,11 +8,12 @@ import './styles/global.css';
 const root = document.getElementById('root')!;
 const route = resolveRoute(window.location.pathname);
 
-// Home only: start the WebGL scene chunks and particle data alongside the page module instead of after it.
+// Home only: start the WebGL scene chunks alongside the page module instead of after it. The particle data
+// is already preloaded from the HTML; this call adopts that response (or fetches it if preload is unsupported).
 // Plain dynamic imports, so /join and 404 never request Three.js.
 if (route.id === 'home' && new URLSearchParams(location.search).get('renderer') !== 'canvas') {
   import('./scene/ParticleLogoScene').catch(() => {});
-  import('./lib/logoTargets').then(({ prefetchLogoTargets }) => import('./lib/particleBudget').then(({ particleBudget }) => prefetchLogoTargets(particleBudget().count))).catch(() => {});
+  import('./lib/logoTargets').then(({ prefetchLogoTargets }) => prefetchLogoTargets()).catch(() => {});
 }
 
 loadPage(route.id).then(Page => {

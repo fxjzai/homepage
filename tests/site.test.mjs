@@ -41,6 +41,13 @@ test('production pages expose real content and per-page metadata without JavaScr
     assert.ok(!html.includes('<!--page-'));
     assert.ok(!html.includes('modulepreload" crossorigin href="/assets/three-'));
   }
+  // Only the homepage preloads particle data; the second part is skipped on narrow screens.
+  const preloads = [...home.matchAll(/<link rel="preload" href="\/assets\/(logo-part-\d+-[^"]+\.bin)"[^>]*>/g)];
+  assert.equal(preloads.length, 2);
+  assert.match(preloads[0][0], /as="fetch"[^>]*crossorigin fetchpriority="low" \/>/);
+  assert.match(preloads[1][0], /media="\(min-width: 601px\)"/);
+  for (const [, name] of preloads) readFileSync(new URL(`../dist/assets/${name}`, import.meta.url));
+  for (const html of [join, missing]) assert.ok(!html.includes('logo-part-'));
   const sitemap = readFileSync(new URL('../dist/sitemap.xml', import.meta.url), 'utf8');
   assert.match(sitemap, /https:\/\/fxjzai.com\/join/);
   assert.ok(!sitemap.includes('/404'));

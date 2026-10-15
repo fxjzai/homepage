@@ -1,4 +1,4 @@
 {
-  "release": "2026-10-16-particle-load-1",
-  "change": "压缩并分段加载 GPU 粒子数据，首页预取场景资源，解码与流动路径计算移入后台线程，消除 WebGL 接管时的停顿；粒子开场与交互保持不变。"
+  "release": "2026-10-16-particle-load-2",
+  "change": "首页 HTML 预加载粒子数据，与 Three.js 并行下载，缩短 WebGL 接管等待；粒子开场与交互保持不变。"
 }

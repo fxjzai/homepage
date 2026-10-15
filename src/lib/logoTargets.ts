@@ -1,5 +1,6 @@
 import partUrls from 'virtual:logo-pack';
 import { LOGO_PARTS } from './logoPack';
+import { particleBudget } from './particleBudget';
 
 const parts = new Map<number, Promise<ArrayBuffer>>();
 
@@ -28,7 +29,7 @@ export function loadLogoBuffers(count: number) {
   return Promise.all(LOGO_PARTS.flatMap(([start], index) => start < count ? [loadPart(index)] : []));
 }
 
-/** Start the network requests early without decoding. */
-export function prefetchLogoTargets(count: number) {
-  loadLogoBuffers(count).catch(() => {});
+/** Start the network requests early without decoding, for the current device tier. */
+export function prefetchLogoTargets() {
+  loadLogoBuffers(particleBudget().count).catch(() => {});
 }
