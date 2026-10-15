@@ -55,13 +55,14 @@ export default function ParticleLogoScene({ paused, visible, replay, epoch, onRe
   }, []);
   const lowPower = (navigator.hardwareConcurrency || 8) <= 4;
   const count = mobile ? 6500 : lowPower ? 14000 : 22000;
+  const haloCount = mobile ? 1100 : lowPower ? 2000 : 3200;
   return <div ref={container} className="scene-container" role="img" aria-label="白色星粒组成反向加载 Logo 外圈，红色星粒组成中央斜杠。可移动指针探索，拖动旋转。">
     {data && <Canvas camera={{ position: [0, 0, 4.8], fov: 38, near: .1, far: 50 }}
       dpr={[.75, mobile ? 1.15 : 1.5]} frameloop={visible && !paused ? 'always' : 'demand'}
       gl={{ alpha: true, antialias: false, powerPreference: 'high-performance', toneMapping: NoToneMapping }}>
       <SceneLifecycle active={visible && !paused} onReady={onReady} onError={onError} />
       <BackgroundStars paused={paused} mobile={mobile} pointer={pointer} replay={replay} />
-      <ParticleLogo data={data} count={count} paused={paused} replay={replay} epoch={epoch} pointer={pointer} mobile={mobile} onMetrics={onMetrics} />
+      <ParticleLogo data={data} count={count} haloCount={haloCount} paused={paused} replay={replay} epoch={epoch} pointer={pointer} mobile={mobile} onMetrics={onMetrics} />
     </Canvas>}
   </div>;
 }

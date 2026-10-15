@@ -1,5 +1,11 @@
-/** Small closed paths inside the original silhouette. No global orbit or rotation. */
-export function createLogoFlow(positions: Float32Array, kinds: Float32Array, seeds: Float32Array, svg: string) {
+const resolution = 256;
+const masks = new Map<string, Uint8Array>();
+
+/** Even-odd silhouette mask. Scanline fill: one crossing pass per row instead of a polygon test per pixel.
+ * Cached per SVG so Canvas 2D and WebGL share one build during start-up. */
+function silhouetteMask(svg: string) {
+  const cached = masks.get(svg);
+  if (cached) return cached;
   const viewBox = svg.match(/viewBox="([^"]+)"/)![1].split(/\s+/).map(Number);
   const width = viewBox[2], height = viewBox[3], scale = Math.max(width, height);
   const polygons = [...svg.matchAll(/ d="([^"]+)"/g)].map(match => {
@@ -8,19 +14,34 @@ export function createLogoFlow(positions: Float32Array, kinds: Float32Array, see
     for (let i = 0; i < numbers.length; i += 2) polygon.push([(numbers[i] - width / 2) * 2 / scale, (height / 2 - numbers[i + 1]) * 2 / scale]);
     return polygon;
   });
-  const inside = (x: number, y: number, kind: number) => {
-    const polygon = polygons[kind]; let result = false;
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const [ax, ay] = polygon[i], [bx, by] = polygon[j];
-      if ((ay > y) !== (by > y) && x < (bx - ax) * (y - ay) / (by - ay) + ax) result = !result;
-    }
-    return result;
-  };
-  const resolution = 256;
   const mask = new Uint8Array(resolution * resolution * 2);
-  for (let kind = 0; kind < 2; kind++) for (let y = 0; y < resolution; y++) for (let x = 0; x < resolution; x++) {
-    mask[kind * resolution * resolution + y * resolution + x] = inside((x + .5) / resolution * 2 - 1, (y + .5) / resolution * 2 - 1, kind) ? 1 : 0;
+  const crossings: number[] = [];
+  for (let kind = 0; kind < 2; kind++) {
+    const polygon = polygons[kind];
+    for (let row = 0; row < resolution; row++) {
+      const y = (row + .5) / resolution * 2 - 1;
+      crossings.length = 0;
+      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const [ax, ay] = polygon[i], [bx, by] = polygon[j];
+        if ((ay > y) !== (by > y)) crossings.push((bx - ax) * (y - ay) / (by - ay) + ax);
+      }
+      crossings.sort((a, b) => a - b);
+      // A pixel is inside when an odd number of crossings lie to its right, as in the ray test.
+      let next = 0;
+      for (let column = 0; column < resolution; column++) {
+        const x = (column + .5) / resolution * 2 - 1;
+        while (next < crossings.length && crossings[next] <= x) next++;
+        mask[kind * resolution * resolution + row * resolution + column] = (crossings.length - next) & 1;
+      }
+    }
   }
+  masks.set(svg, mask);
+  return mask;
+}
+
+/** Small closed paths inside the original silhouette. No global orbit or rotation. */
+export function createLogoFlow(positions: Float32Array, kinds: Float32Array, seeds: Float32Array, svg: string) {
+  const mask = silhouetteMask(svg);
   const contained = (x: number, y: number, kind: number) => {
     const ix = Math.floor((x + 1) * resolution / 2), iy = Math.floor((y + 1) * resolution / 2);
     return ix >= 0 && ix < resolution && iy >= 0 && iy < resolution && mask[kind * resolution * resolution + iy * resolution + ix] === 1;
