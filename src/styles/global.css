@@ -31,6 +31,11 @@ button { border: 0; background: none; }
 .brand img { display: block; object-fit: contain; }
 .brand-name { font-size: 18px; font-weight: 550; letter-spacing: .13em; }
 .brand-english { display: block; color: rgba(245,247,250,.45); margin-top: 6px; font-size: 12px; line-height: 1; font-weight: 400; letter-spacing: .08em; }
+.site-header .brand { flex-shrink: 0; }
+.header-links { display: flex; align-items: center; gap: 30px; white-space: nowrap; }
+.news-link { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; letter-spacing: .04em; color: rgba(245,247,250,.8); transition: color .2s; }
+.news-link svg { width: 16px; height: 16px; }
+.news-link:hover { color: var(--red); }
 .community-link { display: inline-flex; align-items: center; gap: 15px; font-size: 14px; letter-spacing: .04em; color: rgba(245,247,250,.8); }
 .arrow-circle { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid rgba(245,247,250,.2); border-radius: 50%; transition: background .2s, border-color .2s, transform .2s; }
 .arrow-circle svg { width: 16px; height: 16px; }
@@ -95,6 +100,8 @@ button { border: 0; background: none; }
   .site-header { padding: max(25px, env(safe-area-inset-top)) 24px 25px; }
   .brand { gap: 10px; } .brand img { width: 25px; height: 30px; }
   .brand-name { font-size: 15px; } .brand-english { font-size: 12px; letter-spacing: 0; margin-top: 5px; }
+  .header-links { gap: 12px; }
+  .news-link { gap: 5px; font-size: 13px; }
   .community-link { gap: 9px; font-size: 13px; } .arrow-circle { width: 30px; height: 30px; }
   .arrow-circle svg { width: 14px; height: 14px; }
   .hero-copy { left: 26px; right: 20px; bottom: 143px; }
@@ -118,3 +125,9 @@ button { border: 0; background: none; }
   .home { min-height: 480px; } .site-header { padding-top: 24px; } .hero-copy { bottom: 98px; } .hero-copy h1 { font-size: 30px; } .copy-overline { display: none; } .site-footer { height: 66px; }
 }
 @media(prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0ms !important; transition-duration: .001ms !important; } }
+
+@media(max-width: 360px) {
+  .site-header { flex-wrap: wrap; row-gap: 16px; }
+  .site-header .brand { flex-shrink: 0; }
+  .header-links { width: 100%; justify-content: flex-end; gap: 24px; }
+}

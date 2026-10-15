@@ -19,7 +19,7 @@ npm run preview
 
 ## 页面与内容架构
 
-- `src/content/site.ts`：品牌信息、正式域名、首页文案与主入口。默认配置保留定型首页，活动期间可以改文案和链接，恢复配置即可还原。
+- `src/content/site.ts`：品牌信息、正式域名、首页文案与主入口。默认配置保留定型首页，包含社群与科技资讯站（`https://ic.fxjzai.com/`）入口；活动期间可以改文案和链接，恢复配置即可还原。
 - `src/app/routes.ts`：页面地址、标题、描述、是否允许索引；`src/app/App.tsx`：对应页面的按需加载器。新增页面需要同时登记这两处。
 - `src/app/metadata.ts`：逐页 canonical、Open Graph、基础 WebPage JSON-LD 和 robots 元信息。所有内容必须与真实页面一致，不虚构组织、产品或事件。
 - `src/entry-server.tsx` 与 `scripts/build.mjs`：使用同一页面组件生成 HTML，避免维护两套正文。浏览器通过 hydration 接管，浏览器专用状态与粒子在挂载后初始化。
@@ -107,7 +107,7 @@ python3 scripts/generate_logo_assets.py --output /tmp/fxjzai-logo-assets
 
 ## 验证范围
 
-粒子版本为 `2026-09-06-particle-flow-1`。回归测试使用 Node.js 22.18+：先 `npm run build`，再 `node --test tests/*.test.mjs`。数值测试覆盖移动输入、轨迹中段受力、当前位置受力、惯性差异、30/60/120Hz 阻尼一致性、Logo 路径范围与接缝连续性；站点测试覆盖未知路由、元信息转义、构建后的正文和 SEO 输出。
+当前站点发布版本为 `2026-10-15-brand-navigation-1`，更新记录见 [CHANGELOG.md](CHANGELOG.md)；本次仅调整导航，粒子实现沿用 `2026-09-06-particle-flow-1`。回归测试使用 Node.js 22.18+：先 `npm run build`，再 `node --test tests/*.test.mjs`。数值测试覆盖移动输入、轨迹中段受力、当前位置受力、惯性差异、30/60/120Hz 阻尼一致性、Logo 路径范围与接缝连续性；站点测试覆盖未知路由、元信息转义、构建后的正文和 SEO 输出。
 
 粒子版本此前在 Edge 验证连续搅动、手动视角、暂停、恢复与重播；WebGL 桌面 22,000 点和 Canvas 2D 6,200 点均约 60 FPS，Canvas 绘制采样约 5ms。390px 视口 WebGL 6,500 点约 60 FPS，无横向溢出。尚未覆盖真实手机或重新验收 Safari。
 

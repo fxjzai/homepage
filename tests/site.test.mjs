@@ -29,6 +29,8 @@ test('production pages expose real content and per-page metadata without JavaScr
   assert.match(home, /<h1>反向加载/);
   assert.match(home, /探索无终点/);
   assert.match(home, /href="\/join"/);
+  assert.match(home, /href="https:\/\/ic\.fxjzai\.com\/"/);
+  assert.match(home, /科技资讯/);
   assert.match(home, /rel="canonical" href="https:\/\/fxjzai.com\/"/);
   assert.match(join, /<title>加入社群 · 反向加载<\/title>/);
   assert.match(join, /社群入口即将开放/);
@@ -43,4 +45,14 @@ test('production pages expose real content and per-page metadata without JavaScr
   assert.match(sitemap, /https:\/\/fxjzai.com\/join/);
   assert.ok(!sitemap.includes('/404'));
   assert.ok(!readFileSync(new URL('../public/_redirects', import.meta.url), 'utf8').includes('/* /index.html 200'));
+});
+
+
+test('published release identifier matches homepage diagnostics and has release notes', () => {
+  const release = JSON.parse(readFileSync(new URL('../public/release.json', import.meta.url), 'utf8'));
+  const page = readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8');
+  const notes = readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
+  assert.ok(page.includes(`版本 ${release.release}`));
+  assert.ok(notes.includes(release.release));
+  assert.ok(release.change.includes('科技资讯'));
 });

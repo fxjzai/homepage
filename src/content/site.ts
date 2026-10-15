@@ -13,4 +13,5 @@ export const homeContent = {
   title: '反向加载',
   caption: '视角，从来不止一个',
   action: { label: '进入社群', href: '/join' },
+  news: { label: '科技资讯', href: 'https://ic.fxjzai.com/' },
 };

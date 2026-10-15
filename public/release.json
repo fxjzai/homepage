@@ -1,4 +1,4 @@
 {
-  "release": "2026-09-06-particle-flow-1",
-  "change": "Give each logo grain a contained ambient flow and independent pointer momentum; make the sparse background stars interactive, soften the logo rim, retain the red scan and manual camera drag."
+  "release": "2026-10-15-brand-navigation-1",
+  "change": "新增科技资讯站入口，支持官网与资讯站双向访问，优化手机端导航排版；保留原有粒子视觉与交互。"
 }
