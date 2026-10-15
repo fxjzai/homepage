@@ -1,39 +1,15 @@
 import { BufferAttribute, BufferGeometry, Color } from 'three';
-import { createLogoFlow } from './logoFlow';
-import { haloDepth, haloRadius, hash, ringAttributes } from './introPath';
-import logoSvg from '../../public/assets/brand-mark.svg?raw';
+import type { LogoArrays } from './logoArrays';
 
-/** Logo grains first, then `haloCount` orbit grains (kind 2) that never enter the silhouette. */
-export function createLogoGeometry(data: Float32Array, count: number, haloCount: number, mobile: boolean) {
-  const total = count + haloCount;
-  const positions = new Float32Array(total * 3);
-  const parameters = new Float32Array(total * 4);
-  const rings = new Float32Array(total * 4);
-  const halos = new Float32Array(total * 2);
-  for (let i = 0; i < count; i++) {
-    const source = i * 7;
-    positions.set(data.subarray(source, source + 3), i * 3);
-    parameters.set([data[source + 3], data[source + 4], data[source + 5], data[source + 6]], i * 4);
-  }
-  for (let i = 0; i < total; i++) rings.set(ringAttributes(i), i * 4);
-  for (let i = count; i < total; i++) {
-    const seed = hash(i * .917 + 5.5);
-    parameters.set([2, seed, .55 + hash(i * 1.93 + .7) * .7, .25 + hash(i * 2.71 + 3.3) * .7], i * 4);
-    halos.set([haloRadius(i, mobile), haloDepth(i)], i * 2);
-  }
+/** Wraps precomputed attribute data (see logoArrays.ts); cheap enough for the render path. */
+export function createLogoGeometry(arrays: LogoArrays) {
   const geometry = new BufferGeometry();
-  geometry.setAttribute('position', new BufferAttribute(positions, 3));
-  geometry.setAttribute('aParameters', new BufferAttribute(parameters, 4));
-  geometry.setAttribute('aRing', new BufferAttribute(rings, 4));
-  geometry.setAttribute('aHalo', new BufferAttribute(halos, 2));
-  const kinds = new Float32Array(count), seeds = new Float32Array(count);
-  for (let i = 0; i < count; i++) { kinds[i] = parameters[i * 4]; seeds[i] = parameters[i * 4 + 1]; }
-  const flow = createLogoFlow(positions.subarray(0, count * 3), kinds, seeds, logoSvg);
-  // Halo grains orbit instead of flowing: zero-length flow paths and no rim softening.
-  const paths = new Float32Array(total * 4), softness = new Float32Array(total).fill(1);
-  paths.set(flow.paths); softness.set(flow.softness);
-  geometry.setAttribute('aFlow', new BufferAttribute(paths, 4));
-  geometry.setAttribute('aSoftness', new BufferAttribute(softness, 1));
+  geometry.setAttribute('position', new BufferAttribute(arrays.positions, 3));
+  geometry.setAttribute('aParameters', new BufferAttribute(arrays.parameters, 4));
+  geometry.setAttribute('aRing', new BufferAttribute(arrays.rings, 4));
+  geometry.setAttribute('aHalo', new BufferAttribute(arrays.halos, 2));
+  geometry.setAttribute('aFlow', new BufferAttribute(arrays.paths, 4));
+  geometry.setAttribute('aSoftness', new BufferAttribute(arrays.softness, 1));
   geometry.computeBoundingSphere();
   return geometry;
 }

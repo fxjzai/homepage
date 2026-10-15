@@ -3,7 +3,10 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { NoToneMapping } from 'three';
 import { usePointerField } from '../hooks/usePointerField';
 import { useAdaptiveQuality } from '../hooks/useAdaptiveQuality';
-import { loadLogoTargets } from '../lib/logoTargets';
+import { loadLogoBuffers } from '../lib/logoTargets';
+import { computeLogoArrays } from '../lib/logoWorkerClient';
+import type { LogoArrays } from '../lib/logoArrays';
+import { particleBudget } from '../lib/particleBudget';
 import { ParticleLogo } from './ParticleLogo';
 import { BackgroundStars } from './BackgroundStars';
 import type { SceneProps } from './sceneTypes';
@@ -32,10 +35,11 @@ function SceneLifecycle({ active, onReady, onError }: { active: boolean; onReady
 export default function ParticleLogoScene({ paused, visible, replay, epoch, onReady, onError, onReplay, onMetrics }: SceneProps) {
   const container = useRef<HTMLDivElement>(null);
   const pointer = usePointerField(container, paused, onReplay);
-  const [data, setData] = useState<Float32Array | null>(null);
-  const [mobile, setMobile] = useState(window.innerWidth <= 600);
+  const [budget, setBudget] = useState(particleBudget);
+  // Keeps the previous tier on screen until the new one is ready, so a resize never blanks the scene.
+  const [logo, setLogo] = useState<{ arrays: LogoArrays; count: number; haloCount: number; mobile: boolean } | null>(null);
+  const { mobile, count, haloCount } = budget;
   useEffect(() => {
-    let mounted = true;
     try {
       const probe = document.createElement('canvas');
       const context = probe.getContext('webgl2');
@@ -43,26 +47,29 @@ export default function ParticleLogoScene({ paused, visible, replay, epoch, onRe
       const motionSupported = context.getExtension('EXT_color_buffer_float') || context.getExtension('EXT_color_buffer_half_float');
       context.getExtension('WEBGL_lose_context')?.loseContext();
       if (!motionSupported) { onError(); return; }
-    } catch (error) { if (import.meta.env.DEV) console.warn('WebGL preflight failed:', error); onError(); return; }
-    loadLogoTargets().then(data => { if (mounted) setData(data); }).catch(error => { if (import.meta.env.DEV) console.error('Logo targets unavailable:', error); if (mounted) onError(); });
-    return () => { mounted = false; };
+    } catch (error) { if (import.meta.env.DEV) console.warn('WebGL preflight failed:', error); onError(); }
   }, [onError]);
   useEffect(() => {
+    let mounted = true;
+    // Decode and trace flow paths in a worker; the Canvas 2D intro keeps animating meanwhile.
+    loadLogoBuffers(count).then(buffers => computeLogoArrays(buffers, count, haloCount, mobile))
+      .then(arrays => { if (mounted) setLogo({ arrays, count, haloCount, mobile }); })
+      .catch(error => { if (import.meta.env.DEV) console.error('Logo targets unavailable:', error); if (mounted) onError(); });
+    return () => { mounted = false; };
+  }, [count, haloCount, mobile, onError]);
+  useEffect(() => {
     const mq = matchMedia('(max-width: 600px)');
-    const update = () => setMobile(mq.matches);
+    const update = () => setBudget(particleBudget());
     mq.addEventListener('change', update);
     return () => mq.removeEventListener('change', update);
   }, []);
-  const lowPower = (navigator.hardwareConcurrency || 8) <= 4;
-  const count = mobile ? 6500 : lowPower ? 14000 : 22000;
-  const haloCount = mobile ? 1100 : lowPower ? 2000 : 3200;
   return <div ref={container} className="scene-container" role="img" aria-label="白色星粒组成反向加载 Logo 外圈，红色星粒组成中央斜杠。可移动指针探索，拖动旋转。">
-    {data && <Canvas camera={{ position: [0, 0, 4.8], fov: 38, near: .1, far: 50 }}
+    {logo && <Canvas camera={{ position: [0, 0, 4.8], fov: 38, near: .1, far: 50 }}
       dpr={[.75, mobile ? 1.15 : 1.5]} frameloop={visible && !paused ? 'always' : 'demand'}
       gl={{ alpha: true, antialias: false, powerPreference: 'high-performance', toneMapping: NoToneMapping }}>
       <SceneLifecycle active={visible && !paused} onReady={onReady} onError={onError} />
       <BackgroundStars paused={paused} mobile={mobile} pointer={pointer} replay={replay} />
-      <ParticleLogo data={data} count={count} haloCount={haloCount} paused={paused} replay={replay} epoch={epoch} pointer={pointer} mobile={mobile} onMetrics={onMetrics} />
+      <ParticleLogo arrays={logo.arrays} count={logo.count} haloCount={logo.haloCount} paused={paused} replay={replay} epoch={epoch} pointer={pointer} mobile={logo.mobile} onMetrics={onMetrics} />
     </Canvas>}
   </div>;
 }

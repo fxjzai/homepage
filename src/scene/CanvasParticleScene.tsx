@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { usePointerField } from '../hooks/usePointerField';
 import targets from './logoTargetsLite.json';
-import { createLogoFlow, flowPosition } from '../lib/logoFlow';
-import logoSvg from '../../public/assets/brand-mark.svg?raw';
+import { flowPosition } from '../lib/logoFlow';
+import { computeLogoFlow } from '../lib/logoWorkerClient';
 import type { SceneProps } from './sceneTypes';
 import { coastParticle, particleMass, PointerMotion, stirParticle } from '../lib/pointerMotion';
 import { departureTime, flightTime, haloDepth, haloPlace, haloRadius, hoverGlow, igniteWave, INTRO, introPlace, ringAttributes, ringGlow, shimmer } from '../lib/introPath';
@@ -73,7 +73,11 @@ export default function CanvasParticleScene(props: SceneProps) {
       return { theta0, ringR, ringZ, seed, depth: haloDepth(i), alpha: .3 + hash(i * 2.71 + 3.3) * .55,
         warm: hash(seed * 71.3) > .88, radius: .45 + hash(i * 1.93 + .7) * .5, mass: particleMass(1, seed) };
     });
-    const flow = createLogoFlow(new Float32Array(points.flatMap(p => [p.x, p.y, p.z])), new Float32Array(points.map(p => p.red)), new Float32Array(points.map(p => p.seed)), logoSvg);
+    // Flow paths are traced in a worker. Until they arrive (well before any grain leaves the ring) grains rest on their anchor.
+    // A late result blends in over 0.4 s instead of snapping grains onto their paths.
+    let flow: { paths: Float32Array; softness: Float32Array } | null = null, flowMix = 0;
+    computeLogoFlow(new Float32Array(points.flatMap(p => [p.x, p.y, p.z])), new Float32Array(points.map(p => p.red)), new Float32Array(points.map(p => p.seed)))
+      .then(result => { if (!disposed) { flow = result; flowMix = intro < INTRO.departure ? 1 : 0; schedule(); } }, () => {});
     let width = 1, height = 1, ratio = 1, mobile = false, count = 6200;
     let rotationX = 0, rotationY = 0, animationTime = 0;
     let intro = Math.max(0, (performance.now() - currentProps.current.epoch) / 1000);
@@ -103,6 +107,7 @@ export default function CanvasParticleScene(props: SceneProps) {
       if (lastReplay !== state.replay) { intro = 0; offsets.fill(0); haloOffsets.fill(0); skyOffsets.fill(0); motion.reset(); lastReplay = state.replay; }
       if (state.paused) { intro = Math.max(intro, 7); offsets.fill(0); haloOffsets.fill(0); skyOffsets.fill(0); motion.reset(); rotationX = rotationY = 0; }
       else { intro += elapsed; animationTime += dt; }
+      if (flow && flowMix < 1) flowMix = Math.min(1, flowMix + dt / .4);
       const field = pointer.current;
       if (!state.paused) {
         if (!field.dragging) {
@@ -184,7 +189,8 @@ export default function CanvasParticleScene(props: SceneProps) {
       for (let i = 0; i < count; i++) {
         const p = points[i];
         const flowIndex = i * 4;
-        const stream = state.paused ? p : flowPosition(p.x, p.y, flow.paths[flowIndex], flow.paths[flowIndex + 1], flow.paths[flowIndex + 2], flow.paths[flowIndex + 3], p.seed, animationTime);
+        const flowing = state.paused || !flow ? p : flowPosition(p.x, p.y, flow.paths[flowIndex], flow.paths[flowIndex + 1], flow.paths[flowIndex + 2], flow.paths[flowIndex + 3], p.seed, animationTime);
+        const stream = flowMix >= 1 ? flowing : { x: p.x + (flowing.x - p.x) * flowMix, y: p.y + (flowing.y - p.y) * flowMix };
         const restZ = p.z + Math.sin(animationTime * .38 + p.phase * 4) * .02 * quiet;
         const place = introPlace(p.theta0, p.ringR, p.ringZ, stream.x, stream.y, restZ, 0, 0, p.start, p.flight, t);
         const ring = ringGlow(p.theta0, t);
@@ -204,7 +210,7 @@ export default function CanvasParticleScene(props: SceneProps) {
         const wave = igniteWave(p.centre, t) * quiet;
         const glow = hoverGlow(Math.hypot((px - width / 2) * 2 / height - hoverX, 1 - py * 2 / height - hoverY), hover);
         const arrived = clamp((place.progress - .15) / .85);
-        const rest = (.5 + p.seed * .4 + p.red * .1) * twinkle * (state.paused ? 1 : shimmer(stream.x, stream.y, p.seed, animationTime)) * flow.softness[i];
+        const rest = (.5 + p.seed * .4 + p.red * .1) * twinkle * (state.paused ? 1 : shimmer(stream.x, stream.y, p.seed, animationTime)) * (flow ? flow.softness[i] : 1);
         const alpha = ring * (1 - arrived) + rest * arrived + inFlight * .4 + wave * .7 + sweep * .65 + glow * .6;
         const boost = 1 + sweep * .5 + wave * .8 + inFlight * .4 + glow * .7;
         if (place.progress < .5) push(p.theta0 / TAU > .9 ? 3 : 2, alpha, px, py, p.radius * projected.perspective * (mobile ? .85 : 1) * boost);

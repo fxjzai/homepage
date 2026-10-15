@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { AdditiveBlending, BufferGeometry, Group, MathUtils, Points, ShaderMaterial, Vector2 } from 'three';
 import type { PointerField } from '../hooks/usePointerField';
 import { createLogoGeometry } from '../lib/logoSampling';
+import type { LogoArrays } from '../lib/logoArrays';
 import { useParticleMotion } from './useParticleMotion';
 import { particleMotionShader } from './shaders/particleMotion';
 import { introShader } from './shaders/intro';
@@ -11,14 +12,14 @@ import vertexShader from './shaders/particle.vert.glsl?raw';
 import fragmentShader from './shaders/particle.frag.glsl?raw';
 import type { SceneMetrics } from './sceneTypes';
 
-export function ParticleLogo({ data, count, haloCount, paused, replay, epoch, pointer, mobile, onMetrics }: { data: Float32Array; count: number; haloCount: number; paused: boolean; replay: number; epoch: number; pointer: RefObject<PointerField>; mobile: boolean; onMetrics?: (metrics: SceneMetrics) => void }) {
+export function ParticleLogo({ arrays, count, haloCount, paused, replay, epoch, pointer, mobile, onMetrics }: { arrays: LogoArrays; count: number; haloCount: number; paused: boolean; replay: number; epoch: number; pointer: RefObject<PointerField>; mobile: boolean; onMetrics?: (metrics: SceneMetrics) => void }) {
   const group = useRef<Group>(null);
   const material = useRef<ShaderMaterial>(null);
   const { gl, size, viewport, invalidate } = useThree();
   const time = useRef(0);
   const intro = useRef(0);
   const statistics = useRef({ elapsed: 0, frames: 0, total: 0 });
-  const geometry = useMemo(() => createLogoGeometry(data, count, haloCount, mobile), [data, count, haloCount, mobile]);
+  const geometry = useMemo(() => createLogoGeometry(arrays), [arrays]);
   const points = useRef<Points<BufferGeometry, ShaderMaterial>>(null);
   const motionUniforms = useParticleMotion(geometry, points, pointer, paused, replay);
   const uniforms = useMemo(() => ({ ...motionUniforms, uTime: { value: 0 }, uIntro: { value: 0 }, uStill: { value: paused ? 1 : 0 }, uDpr: { value: 1 }, uScale: { value: 1 }, uHover: { value: new Vector2() }, uHoverStrength: { value: 0 } }), [motionUniforms]);
