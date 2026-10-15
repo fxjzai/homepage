@@ -6,6 +6,7 @@
 
 - 安装依赖用 `npm ci`，保留 `package-lock.json`。
 - 开发用 `npm run dev`；生产验收先 `npm run build`，再 `npm run preview`。两者默认同为 4173 端口，选择其一运行。
+- 官网使用 Workers 静态资源托管；发布用 `npm run deploy`（预渲染构建后执行 `cf deploy --prebuilt --mode production`），不要直接运行会触发框架自动配置的 `cf deploy`。配置与回退流程见 README。
 - 回归用 `node --test tests/*.test.mjs`，需要 Node.js 22.18+；站点测试读取生产产物，先运行 `npm run build`。
 - 动效修改需检查真实 WebGL 画面，以及 `/?renderer=canvas&debug=1` 的兼容路径；draw calls 和 FPS 不能单独证明 Logo 可见。
 - 未实测的浏览器或手机硬件不得标记通过。更新版本标识时同步 `public/release.json` 与 `src/pages/HomePage.tsx`。

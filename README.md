@@ -4,7 +4,7 @@
 
 ## 本地运行与构建
 
-构建需要 Node.js 20.19+ 或 22.12+；执行数值回归测试需要 22.18+。
+构建、cf 发布与回归测试需要 Node.js 22.18+。
 
 ```sh
 npm ci
@@ -82,16 +82,25 @@ AI 时代编年史暂未实现，也没有在正式首页添加未完成入口�
 
 `contactUrl` 可留空，也可填写 `https://`、`mailto:` 或 `tel:` 链接。页面提供备用联系方式复制操作。
 
-## Cloudflare Pages
+## Cloudflare Workers 与 cf CLI
 
-1. 将项目放入自己的 Git 仓库并连接 Cloudflare Pages。
-2. Framework preset 使用 Vite，构建命令为 `npm run build`，输出目录为 `dist`。
-3. 构建环境选择上述受支持的 Node 版本。
-4. 在 Cloudflare Pages 项目里添加并验证 `fxjzai.com` 自定义域名。
+官网使用 Workers 静态资源托管，Worker 名为 `fxjzai-homepage`，正式域名为 `fxjzai.com`。无需运行服务端代码。使用已安装的 `cf` CLI（本次验收版本 `1.0.0-beta.17`）与 Node.js 22.18+，先完成 `cf auth create default`；账号已授权时无需重复登录。
 
-也可以在 Cloudflare 控制台选择 Pages → 拖放文件，上传 `dist/` 的内容或以这些文件为根目录的 ZIP；不要上传源码或包含外层 `dist` 目录的 ZIP。直接上传项目后续继续采用直接上传方式更新。
+```sh
+npm ci
+npm run build
+node --test tests/*.test.mjs
+cf deploy --prebuilt --mode production --dry-run
+cf deploy --prebuilt --mode production
+```
 
-Pages 按无扩展名地址提供静态 HTML，`/join` 对应 `join.html`，`404.html` 保证未知路径返回 404。构建生成去除页面尾斜杠的 301 规则，不使用全站 SPA 回退。没有数据库、账户系统或后端运行依赖。`robots.txt` 与站点地图开放正式内容，404 标记 `noindex`；配置中的正式域名应与最终绑定域名一致。
+日常发布可使用 `npm run deploy`，它先执行相同构建，再调用 `cf deploy --prebuilt --mode production`。推送 Git 仓库只保存源码，不会自动发布站点。
+
+`cloudflare.config.ts` 记录 Worker 名称、兼容日期、自定义域名与静态 HTML 行为。`scripts/build-cloudflare.mjs` 将已预渲染的 `dist/` 打包为 cf v0 Build Output（`.cloudflare/output/v0/`）。使用 `--prebuilt` 是为了部署完整的预渲染 HTML：直接 `cf deploy` 会尝试框架自动配置/构建并跳过本项目的额外预渲染步骤。构建输出为可删除的临时文件，不入库；没有增加 Wrangler 或 Cloudflare Vite 插件依赖。
+
+静态资源采用 `drop-trailing-slash` 和 `404-page`：`/join` 对应 `join.html`，未知路径返回 `404.html` 与真实 404 状态。保留 `_headers`、`_redirects`、二维码配置禁缓存规则、微信验证文件、robots 与 sitemap。`/release.json` 与首页诊断使用同一发布标识。官网顶部提供科技资讯站入口。
+
+旧的 Pages 项目 `fxjzai` 与 `fxjzai.pages.dev` 暂时保留作为迁移回退点，不再作为正式域名的发布目标。回退时，先解除 `fxjzai-homepage` 的 `fxjzai.com` 自定义域名，再将 apex 的代理 CNAME 恢复为 `fxjzai.pages.dev`，并在 Pages 项目重新关联 `fxjzai.com`；只操作该域名，不改动 TXT、邮件记录或其他子域。切换前需重新核对目标和记录，先用 `cf cli search` 查询命令与参数。
 
 ## 重建 Logo 数据
 
@@ -107,7 +116,7 @@ python3 scripts/generate_logo_assets.py --output /tmp/fxjzai-logo-assets
 
 ## 验证范围
 
-当前站点发布版本为 `2026-10-15-brand-navigation-1`，更新记录见 [CHANGELOG.md](CHANGELOG.md)；本次仅调整导航，粒子实现沿用 `2026-09-06-particle-flow-1`。回归测试使用 Node.js 22.18+：先 `npm run build`，再 `node --test tests/*.test.mjs`。数值测试覆盖移动输入、轨迹中段受力、当前位置受力、惯性差异、30/60/120Hz 阻尼一致性、Logo 路径范围与接缝连续性；站点测试覆盖未知路由、元信息转义、构建后的正文和 SEO 输出。
+当前站点发布版本为 `2026-10-15-workers-1`，更新记录见 [CHANGELOG.md](CHANGELOG.md)；本次仅调整导航，粒子实现沿用 `2026-09-06-particle-flow-1`。回归测试使用 Node.js 22.18+：先 `npm run build`，再 `node --test tests/*.test.mjs`。数值测试覆盖移动输入、轨迹中段受力、当前位置受力、惯性差异、30/60/120Hz 阻尼一致性、Logo 路径范围与接缝连续性；站点测试覆盖未知路由、元信息转义、构建后的正文和 SEO 输出。
 
 粒子版本此前在 Edge 验证连续搅动、手动视角、暂停、恢复与重播；WebGL 桌面 22,000 点和 Canvas 2D 6,200 点均约 60 FPS，Canvas 绘制采样约 5ms。390px 视口 WebGL 6,500 点约 60 FPS，无横向溢出。尚未覆盖真实手机或重新验收 Safari。
 

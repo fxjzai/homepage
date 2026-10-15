@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 4173",
-    "build": "tsc -b && node scripts/build.mjs",
-    "preview": "vite preview --host 0.0.0.0 --port 4173"
+    "build": "tsc -b && node scripts/build.mjs && node scripts/build-cloudflare.mjs",
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "deploy": "npm run build && cf deploy --prebuilt --mode production"
   },
   "dependencies": {
     "@react-three/fiber": "^9.3.0",

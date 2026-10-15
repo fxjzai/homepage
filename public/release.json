@@ -1,4 +1,4 @@
 {
-  "release": "2026-10-15-brand-navigation-1",
-  "change": "新增科技资讯站入口，支持官网与资讯站双向访问，优化手机端导航排版；保留原有粒子视觉与交互。"
+  "release": "2026-10-15-workers-1",
+  "change": "迁移到 Cloudflare Workers 静态资源托管，使用 cf CLI 发布；新增科技资讯入口并优化手机导航，保留预渲染、真实 404 与粒子交互。"
 }

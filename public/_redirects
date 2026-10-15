@@ -1,2 +1,2 @@
-# Pages serves generated HTML at extensionless paths and uses 404.html for misses.
+# Static hosting serves generated HTML at extensionless paths and uses 404.html for misses.
 # Do not add a catch-all SPA rewrite: unknown URLs must return HTTP 404.

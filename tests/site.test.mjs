@@ -56,3 +56,19 @@ test('published release identifier matches homepage diagnostics and has release 
   assert.ok(notes.includes(release.release));
   assert.ok(release.change.includes('科技资讯'));
 });
+
+
+test('Cloudflare deployment preserves prerendered routes, assets and real 404 handling', () => {
+  const base = new URL('../.cloudflare/output/v0/', import.meta.url);
+  const root = JSON.parse(readFileSync(new URL('config.json', base), 'utf8'));
+  const worker = JSON.parse(readFileSync(new URL('workers/default/worker.config.json', base), 'utf8'));
+  assert.deepEqual(root.buildContext, { isPreview: false, mode: 'production' });
+  assert.equal(worker.name, 'fxjzai-homepage');
+  assert.deepEqual(worker.domains, ['fxjzai.com']);
+  assert.equal(worker.assets.htmlHandling, 'drop-trailing-slash');
+  assert.equal(worker.assets.notFoundHandling, '404-page');
+  assert.ok(!worker.entrypoint);
+  for (const file of ['index.html', 'join.html', '404.html', 'release.json', '_headers', '_redirects', 'assets/brand-mark.svg']) {
+    assert.deepEqual(readFileSync(new URL(`workers/default/assets/${file}`, base)), readFileSync(new URL(`../dist/${file}`, import.meta.url)));
+  }
+});

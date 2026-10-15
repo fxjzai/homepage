@@ -24,3 +24,6 @@ __pycache__/
 # Root-level delivery archives and obsolete exported patches
 /*.zip
 /fxjzai-*.patch
+
+# Cloudflare CLI build output and local state
+.cloudflare/
