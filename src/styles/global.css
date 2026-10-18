@@ -37,7 +37,14 @@ button { border: 0; background: none; }
 .news-link svg { width: 16px; height: 16px; }
 .news-link:hover { color: var(--red); }
 .community-link { display: inline-flex; align-items: center; gap: 15px; font-size: 14px; letter-spacing: .04em; color: rgba(245,247,250,.8); }
-.arrow-circle { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid rgba(245,247,250,.2); border-radius: 50%; transition: background .2s, border-color .2s, transform .2s; }
+.arrow-circle { position: relative; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid rgba(245,247,250,.2); border-radius: 50%; transition: background .2s, border-color .2s, transform .2s; }
+.arrow-circle::after { content: ''; position: absolute; left: 50%; top: 50%; width: 2px; height: 2px; margin: -1px; border-radius: 50%; opacity: 0; transform: rotate(-45deg); pointer-events: none; }
+.community-link:hover .arrow-circle::after, .community-link:focus-visible .arrow-circle::after { animation: spark-out .7s ease-out; }
+@keyframes spark-out {
+  from { opacity: 1; box-shadow: 0px -19px 0 #fff, 13px -13px 0 #ff3131, 19px 0px 0 #fff, 13px 13px 0 #ff6b5f, 0px 19px 0 #fff, -13px 13px 0 #ff3131, -19px 0px 0 #fff, -13px -13px 0 #ff3131; }
+  45% { opacity: 1; }
+  to { opacity: 0; box-shadow: 0px -34px 0 #fff, 24px -24px 0 #ff3131, 34px 0px 0 #fff, 24px 24px 0 #ff6b5f, 0px 34px 0 #fff, -24px 24px 0 #ff3131, -34px 0px 0 #fff, -24px -24px 0 #ff3131; }
+}
 .arrow-circle svg { width: 16px; height: 16px; }
 .community-link:hover .arrow-circle { background: #ff3131; border-color: #ff3131; transform: rotate(45deg); }
 .hero-copy { position: absolute; z-index: 1; left: 4.4vw; bottom: 133px; pointer-events: none; opacity: 0; transform: translateY(8px); transition: opacity .5s ease, transform .5s ease; }
@@ -47,8 +54,13 @@ button { border: 0; background: none; }
 .red-line { display: inline-block; width: 16px; height: 2px; background: var(--red); }
 .hero-copy h1 { font-size: clamp(36px, 3.4vw, 52px); letter-spacing: .1em; line-height: 1.35; font-weight: 450; margin: 18px 0 14px; }
 .title-period { color: var(--red); letter-spacing: 0; }
+.hero-copy.copy-visible .title-period { display: inline-block; animation: period-ignite 1.6s ease-out; }
+.hero-copy.copy-visible .title-period.period-replay { animation-delay: 4.2s; }
+.is-still .hero-copy .title-period { animation: none; }
+@keyframes period-ignite { 0% { text-shadow: 0 0 0 #ff313100; } 12% { color: #ffd9d4; text-shadow: 0 0 6px #fff, 0 0 18px #ff3131, 0 0 34px #ff3131aa; } 100% { color: var(--red); text-shadow: 0 0 0 #ff313100; } }
 .hero-copy p { font-size: 15px; line-height: 1.8; letter-spacing: .12em; margin: 0; color: var(--muted); }
 .orbit-caption { position: absolute; right: 4.4vw; top: 48%; display: flex; align-items: center; gap: 20px; writing-mode: vertical-rl; font-size: 12px; letter-spacing: .3em; color: rgba(245,247,250,.32); pointer-events: none; }
+.caption-text { display: flex; gap: 1.1em; }
 .caption-line { width: 1px; height: 48px; background: rgba(245,247,250,.17); }
 .site-footer { position: absolute; z-index: 2; bottom: max(0px, env(safe-area-inset-bottom)); left: 4.4vw; right: 4.4vw; height: 78px; border-top: 1px solid rgba(245,247,250,.1); display: flex; align-items: center; justify-content: space-between; }
 .footer-domain, .join-footer { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; letter-spacing: .15em; color: rgba(245,247,250,.4); }
@@ -66,16 +78,53 @@ button { border: 0; background: none; }
 .motion-button:hover { color: #fff; }
 .motion-button:disabled { color: rgba(245,247,250,.4); }
 .back-link { display: flex; align-items: center; gap: 12px; font-size: 14px; color: #a5a9ad; }
-.back-link svg { width: 17px; height: 17px; transform: rotate(180deg); }
+.back-link svg { width: 17px; height: 17px; transform: rotate(180deg); transition: transform .2s; }
 .back-link:hover { color: white; }
-.join-page { min-height: 100svh; position: relative; overflow: hidden; }
+.back-link:hover svg, .return-experience:hover svg { transform: rotate(180deg) translateX(3px); }
+.join-page { min-height: 100svh; position: relative; overflow: hidden; display: flex; flex-direction: column; }
 .join-page .space-underlay { position: fixed; }
+/* Tiled star fields with coprime tile sizes, so the repeat never lines up into a visible grid. */
+.subpage-stars, .subpage-stars::after { position: fixed; inset: 0; pointer-events: none; }
+.subpage-stars {
+  background-image:
+    radial-gradient(1px 1px at 207px 171px, #ffffffaa, transparent),
+    radial-gradient(1px 1px at 279px 29px, #c7d4ff99, transparent),
+    radial-gradient(1px 1px at 264px 59px, #d8e2ffcc, transparent),
+    radial-gradient(1px 1px at 227px 112px, #c7d4ff99, transparent),
+    radial-gradient(1px 1px at 51px 287px, #9fb8ff88, transparent),
+    radial-gradient(1.2px 1.2px at 428px 294px, #d8e2ffcc, transparent),
+    radial-gradient(1px 1px at 327px 326px, #9fb8ff88, transparent),
+    radial-gradient(1.4px 1.4px at 300px 304px, #d8e2ffcc, transparent),
+    radial-gradient(1.2px 1.2px at 231px 52px, #d8e2ffcc, transparent),
+    radial-gradient(1.4px 1.4px at 301px 434px, #ffffffaa, transparent),
+    radial-gradient(1px 1px at 589px 320px, #c7d4ff99, transparent),
+    radial-gradient(1.4px 1.4px at 110px 197px, #ffffffaa, transparent),
+    radial-gradient(1px 1px at 565px 69px, #c7d4ff99, transparent),
+    radial-gradient(1.4px 1.4px at 638px 215px, #d8e2ffcc, transparent),
+    radial-gradient(1.2px 1.2px at 326px 481px, #ffb08a88, transparent),
+    radial-gradient(1.4px 1.4px at 375px 311px, #ff8a6a77, transparent);
+  background-size: 331px 257px, 331px 257px, 331px 257px, 331px 257px, 457px 389px, 457px 389px, 457px 389px, 457px 389px, 613px 521px, 613px 521px, 613px 521px, 613px 521px, 787px 673px, 787px 673px, 787px 673px, 787px 673px;
+}
+.subpage-stars::after {
+  content: ''; opacity: .15; animation: star-twinkle 5.5s ease-in-out infinite alternate;
+  background-image:
+    radial-gradient(1.6px 1.6px at 259px 189px, #ffffff, transparent),
+    radial-gradient(1.5px 1.5px at 720px 803px, #ff6b5f, transparent),
+    radial-gradient(1.4px 1.4px at 504px 88px, #dbe5ff, transparent),
+    radial-gradient(1.3px 1.3px at 619px 542px, #cfe0ff, transparent),
+    radial-gradient(1.5px 1.5px at 1018px 901px, #ffffff, transparent);
+  background-size: 947px 811px, 947px 811px, 1123px 977px, 1123px 977px, 1123px 977px;
+}
+@keyframes star-twinkle { to { opacity: .95; } }
 .join-content { position: relative; max-width: 580px; margin: 40px auto 90px; padding: 0 30px; text-align: center; }
 .section-kicker { justify-content: center; font-size: 12px; }
 .join-content h1 { font-size: clamp(32px, 3.7vw, 46px); font-weight: 450; letter-spacing: .065em; line-height: 1.6; margin: 22px 0 16px; }
 .join-intro { font-size: 16px; line-height: 1.9; color: var(--muted); margin: 0 0 32px; }
 .qr-panel { padding: 32px; border: 1px solid #23292e; border-radius: 4px; background: rgba(16,22,28,.5); max-width: 360px; margin: 0 auto; }
-.community-empty svg { width: 48px; height: 48px; color: #788086; margin: 8px 0 12px; }
+.scan-frame { position: relative; display: block; width: 48px; height: 48px; margin: 8px auto 12px; color: #788086; }
+.scan-frame svg { display: block; width: 48px; height: 48px; }
+.scan-line { position: absolute; left: 9px; right: 9px; top: 9px; height: 1px; background: linear-gradient(90deg, transparent, #ff3131, transparent); box-shadow: 0 0 6px #ff3131; opacity: .8; animation: scan 2.8s ease-in-out infinite alternate; }
+@keyframes scan { to { top: 38px; } }
 .community-empty h2 { font-size: 18px; font-weight: 450; margin: 7px 0 12px; }
 .community-empty p { font-size: 14px; line-height: 1.9; color: var(--muted); margin: 0; }
 .community-qr { width: 240px; max-width: 100%; height: auto; background: white; padding: 12px; border-radius: 2px; }
@@ -88,9 +137,9 @@ button { border: 0; background: none; }
 .backup-contact a, .contact-value { color: #edf1f5; word-break: break-all; user-select: text; }
 .backup-contact button { color: #ccd3d8; font-size: 14px; border: 1px solid #38414a; border-radius: 3px; padding: 6px 12px; }
 .return-experience { display: inline-flex; align-items: center; gap: 10px; margin-top: 32px; padding: 10px; font-size: 14px; color: var(--muted); }
-.return-experience svg { width: 15px; height: 15px; }
+.return-experience svg { width: 15px; height: 15px; transform: rotate(180deg); transition: transform .2s; }
 .return-experience:hover { color: white; }
-.join-footer { position: relative; display: flex; justify-content: space-between; margin: 0 4.4vw; padding: 25px 0; border-top: 1px solid #20272b; line-height: 1.8; }
+.join-footer { position: relative; display: flex; justify-content: space-between; margin: auto 4.4vw 0; padding: 25px 0 max(25px, env(safe-area-inset-bottom)); border-top: 1px solid #20272b; line-height: 1.8; }
 .join-footer span:last-child { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; }
 @keyframes copy-in { to { opacity: 1; transform: translateY(0); } }
 @media(min-width: 1800px) { .hero-copy { bottom: 150px; } }
@@ -118,13 +167,16 @@ button { border: 0; background: none; }
   .join-content h1 { font-size: 31px; }
   .join-intro { font-size: 15px; }
   .qr-panel { padding: 26px 22px; }
-  .join-footer { margin: 0 24px; gap: 16px; flex-wrap: wrap; font-size: 12px; }
+  .join-footer { margin: auto 24px 0; gap: 16px; flex-wrap: wrap; font-size: 12px; }
   .back-link { font-size: 13px; }
 }
 @media(max-height: 660px) and (min-width: 601px) {
   .home { min-height: 480px; } .site-header { padding-top: 24px; } .hero-copy { bottom: 98px; } .hero-copy h1 { font-size: 30px; } .copy-overline { display: none; } .site-footer { height: 66px; }
 }
-@media(prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0ms !important; transition-duration: .001ms !important; } }
+@media(prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0ms !important; transition-duration: .001ms !important; }
+  .subpage-stars::after, .scan-line, .arrow-circle::after, .title-period { animation: none !important; }
+}
 
 @media(max-width: 360px) {
   .site-header { flex-wrap: wrap; row-gap: 16px; }

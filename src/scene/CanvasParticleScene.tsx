@@ -120,7 +120,7 @@ export default function CanvasParticleScene(props: SceneProps) {
         rotationY += (field.dragY - rotationY) * smoothing;
       }
       const sx = Math.sin(rotationX), cx = Math.cos(rotationX), sy = Math.sin(rotationY), cy = Math.cos(rotationY);
-      const scale = Math.min(width, height) * (mobile ? .395 : .315);
+      const scale = Math.min(width, height) * (mobile ? .375 : .315);
       const centerX = width / 2, centerY = height * (mobile ? .422 : .465);
       if (elapsed > .2) motion.reset();
       const movement = motion.sample(field.x, field.y, field.active && !field.dragging && !state.paused);
@@ -213,11 +213,11 @@ export default function CanvasParticleScene(props: SceneProps) {
         const rest = (.5 + p.seed * .4 + p.red * .1) * twinkle * (state.paused ? 1 : shimmer(stream.x, stream.y, p.seed, animationTime)) * (flow ? flow.softness[i] : 1);
         const alpha = ring * (1 - arrived) + rest * arrived + inFlight * .4 + wave * .7 + sweep * .65 + glow * .6;
         const boost = 1 + sweep * .5 + wave * .8 + inFlight * .4 + glow * .7;
-        if (place.progress < .5) push(p.theta0 / TAU > .9 ? 3 : 2, alpha, px, py, p.radius * projected.perspective * (mobile ? .85 : 1) * boost);
+        if (place.progress < .5) push(p.theta0 / TAU > .9 ? 3 : 2, alpha, px, py, p.radius * projected.perspective * boost);
         else if (p.bright || wave > .4 || glow > .5) {
           const glowSize = (p.hero ? 25 : 10 + p.seed * 7) * (mobile ? .8 : 1) * projected.perspective * boost;
           sparks.push([px, py, glowSize, clamp(alpha), p.red]);
-        } else push(p.red, alpha, px, py, p.radius * projected.perspective * (mobile ? .85 : 1) * boost);
+        } else push(p.red, alpha, px, py, p.radius * projected.perspective * boost);
       }
       for (let j = 0; j < (mobile ? HALO_COUNT / 2 : HALO_COUNT); j++) {
         const h = halo[j];
@@ -232,7 +232,7 @@ export default function CanvasParticleScene(props: SceneProps) {
         const front = .62 + .38 * clamp(orbit.z * .9 + .5);
         const alpha = ring * .85 * (1 - orbit.settle) + h.alpha * front * orbit.settle;
         const group = orbit.settle < .5 ? (h.theta0 / TAU > .9 ? 3 : 2) : h.warm ? 1 : 0;
-        push(group, alpha, px, py, h.radius * projected.perspective * (mobile ? .85 : 1));
+        push(group, alpha, px, py, h.radius * projected.perspective);
       }
       const colours = ['#e3f0ff', '#ff3131', '#9fc7ff', '#ff2a1f'];
       for (let i = 0; i < 32; i++) {

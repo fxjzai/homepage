@@ -4,6 +4,7 @@ import { useMotionPreference } from '../hooks/useMotionPreference';
 import CanvasParticleScene from '../scene/CanvasParticleScene';
 import type { SceneMetrics } from '../scene/sceneTypes';
 import { homeContent, site } from '../content/site';
+import { INTRO } from '../lib/introPath';
 
 const ParticleLogoScene = lazy(() => import('../scene/ParticleLogoScene'));
 
@@ -35,9 +36,10 @@ export default function HomePage() {
   useEffect(() => {
     if (paused || failed) { setCopyVisible(true); return; }
     if (!ready || copyVisible) return;
-    const timeout = window.setTimeout(() => setCopyVisible(true), 3400);
+    // Title lands with the ignition flash so its red period lights up together with the logo.
+    const timeout = window.setTimeout(() => setCopyVisible(true), Math.max(0, INTRO.ignite * 1000 - (performance.now() - epoch)));
     return () => window.clearTimeout(timeout);
-  }, [paused, failed, ready, copyVisible]);
+  }, [paused, failed, ready, copyVisible, epoch]);
   const [visible, setVisible] = useState(true);
   const onReady = useCallback(() => setReady(true), []);
   const onError = useCallback(() => setBackend('canvas'), []);
@@ -73,7 +75,7 @@ export default function HomePage() {
         <ParticleLogoScene paused={paused} visible={visible} replay={replay} epoch={epoch} onReady={onWebGLReady} onError={onError} onReplay={replayAnimation} onMetrics={debug ? setMetrics : undefined} />
       </Suspense>
     </SceneBoundary></div>}
-    {debug && <output className="scene-diagnostics" aria-label="粒子渲染诊断">版本 2026-10-16-particle-load-2<br />路径 {backend} · {paused ? '已暂停' : '动态开启'}{systemReduced ? ' · 系统减少动态' : ''}{metrics && <><br />{metrics.renderer} · {metrics.particles} 粒子 · {metrics.fps} FPS<br />帧 {metrics.frame} · 旋转 {metrics.rotation.toFixed(3)} · 动画 {metrics.intro.toFixed(2)}s{metrics.paintMs !== undefined && <><br />绘制 {metrics.paintMs.toFixed(1)}ms</>}</>}</output>}
+    {debug && <output className="scene-diagnostics" aria-label="粒子渲染诊断">版本 2026-10-18-visual-polish-1<br />路径 {backend} · {paused ? '已暂停' : '动态开启'}{systemReduced ? ' · 系统减少动态' : ''}{metrics && <><br />{metrics.renderer} · {metrics.particles} 粒子 · {metrics.fps} FPS<br />帧 {metrics.frame} · 旋转 {metrics.rotation.toFixed(3)} · 动画 {metrics.intro.toFixed(2)}s{metrics.paintMs !== undefined && <><br />绘制 {metrics.paintMs.toFixed(1)}ms</>}</>}</output>}
 
     <header className="site-header">
       <Brand />
@@ -85,10 +87,10 @@ export default function HomePage() {
 
     <section className={`hero-copy ${copyVisible ? 'copy-visible' : ''}`} aria-label="品牌介绍">
       <div className="copy-overline"><span className="red-line" />{homeContent.overline}</div>
-      <h1>{homeContent.title}<span className="title-period">.</span></h1>
+      <h1>{homeContent.title}<span key={replay} className={`title-period ${replay ? 'period-replay' : ''}`}>.</span></h1>
     </section>
 
-    <div className="orbit-caption" aria-hidden="true"><span>{homeContent.caption}</span><span className="caption-line" /></div>
+    <div className="orbit-caption" aria-hidden="true"><span className="caption-text">{homeContent.caption.split('，').map(part => <span key={part}>{part}</span>)}</span><span className="caption-line" /></div>
 
     <footer className="site-footer">
       <span className="footer-domain">{site.domainLabel}</span>

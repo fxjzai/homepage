@@ -24,8 +24,8 @@ export function ParticleLogo({ arrays, count, haloCount, paused, replay, epoch, 
   const motionUniforms = useParticleMotion(geometry, points, pointer, paused, replay);
   const uniforms = useMemo(() => ({ ...motionUniforms, uTime: { value: 0 }, uIntro: { value: 0 }, uStill: { value: paused ? 1 : 0 }, uDpr: { value: 1 }, uScale: { value: 1 }, uHover: { value: new Vector2() }, uHoverStrength: { value: 0 } }), [motionUniforms]);
   const offset = mobile ? viewport.height * .078 : viewport.height * .035;
-  // 63% of the short side, rising to 79% on narrow screens.
-  const scale = Math.min(viewport.width, viewport.height) * (mobile ? .395 : .315);
+  // 63% of the short side, rising to 75% on narrow screens so the outline keeps a side margin.
+  const scale = Math.min(viewport.width, viewport.height) * (mobile ? .375 : .315);
   useEffect(() => {
     intro.current = Math.max(0, (performance.now() - epoch) / 1000);
     invalidate();
@@ -49,7 +49,8 @@ export function ParticleLogo({ arrays, count, haloCount, paused, replay, epoch, 
     const state = pointer.current;
     const damp = 1 - Math.exp(-delta * 5.6);
     values.uDpr.value = gl.getPixelRatio();
-    values.uScale.value = Math.max(.8, Math.min(1.3, Math.min(size.width, size.height) / 850));
+    // Phones keep desktop-sized grains; the .8 floor made the sparser mobile tier read as faint.
+    values.uScale.value = Math.max(mobile ? 1.05 : .8, Math.min(1.3, Math.min(size.width, size.height) / 850));
     const hovering = state.active && !state.dragging && !paused ? 1 : 0;
     values.uHover.value.set(state.x * size.width / Math.max(1, size.height), state.y);
     values.uHoverStrength.value += (hovering - values.uHoverStrength.value) * (1 - Math.exp(-delta * 6));
